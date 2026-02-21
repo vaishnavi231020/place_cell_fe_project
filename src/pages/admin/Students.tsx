@@ -1,13 +1,3 @@
-/**
- * Admin Students Management Page
- * 
- * Features:
- * - Real-time student data from Firestore
- * - Add single student
- * - Bulk upload students via CSV
- * - Filter by branch, CGPA, backlogs
- * - Send messages to selected students
- */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -19,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { deleteStudent } from '@/lib/firestoreService';
 import {
   Select,
   SelectContent,
@@ -56,7 +47,8 @@ import {
   Plus,
   Upload,
   Loader2,
-  UserPlus
+  UserPlus,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BRANCH_OPTIONS } from '@/types';
@@ -173,6 +165,16 @@ const AdminStudents: React.FC = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setAddingStudent(false);
+    }
+  };
+
+  // delete student
+  const handleDeleteStudent = async (id: string) => {
+    try {
+      await deleteStudent(id);
+      toast({ title: 'Student Deleted!', description: 'The student has been removed from the system.' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -497,6 +499,8 @@ const AdminStudents: React.FC = () => {
                   </div>
                 )}
 
+               
+
                 {/* Results */}
                 {uploadResults.length > 0 && !bulkUploading && (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -593,7 +597,7 @@ const AdminStudents: React.FC = () => {
                 <TableHead>CGPA</TableHead>
                 <TableHead>Backlogs</TableHead>
                 <TableHead>Year</TableHead>
-                <TableHead>Resume</TableHead>
+                <TableHead>Remove</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -638,16 +642,19 @@ const AdminStudents: React.FC = () => {
                     </TableCell>
                     <TableCell>{student.year}</TableCell>
                     <TableCell>
-                      {student.resumeVerified ? (
-                        <CheckCircle className="w-5 h-5 text-success" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-muted-foreground" />
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteStudent(student.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                     <TableCell>
                       {student.firstLogin ? (
                         <Badge variant="outline" className="text-warning border-warning/30">
-                          Pending Login
+                          Pending
                         </Badge>
                       ) : student.placed ? (
                         <Badge variant="default">Placed</Badge>

@@ -1,10 +1,3 @@
-/**
- * Firestore Service Layer
- * 
- * Centralized CRUD operations for all Firestore collections:
- * - companies, jobPostings, applications, interviews, notifications
- */
-
 import {
   collection,
   doc,
@@ -278,6 +271,10 @@ export function subscribeToStudents(callback: (students: any[]) => void) {
     console.error('Error fetching students:', error);
     callback([]);
   });
+}
+
+export async function deleteStudent(id: string) {
+  await deleteDoc(doc(db, 'users', id));
 }
 
 // ============ DASHBOARD STATS ============
