@@ -51,7 +51,7 @@ const AdminHeader: React.FC<HeaderProps> = ({ title, subtitle, onMenuClick }) =>
 
           <Button variant="ghost" size="icon" className="relative rounded-full h-10 w-10 overflow-hidden p-0">
             <img 
-              src="../../../public/p.avif" 
+              src="https://static.vecteezy.com/system/resources/thumbnails/053/630/747/small/a-beautiful-young-woman-in-a-business-suit-photo.jpeg" 
               alt="Profile" 
               className="rounded-full object-cover h-full w-full" 
             />
