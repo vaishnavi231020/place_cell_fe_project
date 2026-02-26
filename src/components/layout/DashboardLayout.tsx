@@ -30,6 +30,7 @@ const routeTitles: Record<string, { title: string; subtitle?: string }> = {
   '/admin/applications': { title: 'Applications', subtitle: 'Review student applications' },
   '/admin/interviews': { title: 'Interviews', subtitle: 'Schedule and manage interviews' },
   '/admin/notifications': { title: 'Notifications', subtitle: 'Send alerts to students' },
+  '/admin/reports': { title: 'Reports & Analytics', subtitle: 'View placement statistics and reports' },
   '/admin/settings': { title: 'Settings', subtitle: 'Portal configuration' },
 };
 
