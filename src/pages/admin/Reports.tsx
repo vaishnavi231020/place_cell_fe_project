@@ -124,9 +124,9 @@ const AdminReports: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      {/* <div>
+      <div>
         <YearWiseAnalysis />
-      </div> */}
+      </div>
 
       {companyWiseData.length > 0 && (
         <Card className="bg-gradient-card border-border">
