@@ -48,8 +48,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
   }
 
   // Check admin access
-  if (adminOnly && userData?.role !== 'ADMIN') {
-    return <Navigate to="/admin" replace />;
+  if (adminOnly && userData && userData.role !== 'ADMIN') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
