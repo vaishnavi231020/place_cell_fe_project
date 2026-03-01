@@ -254,7 +254,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* Resume Section */}
-      <Card className="bg-gradient-card border-border">
+      {/* <Card className="bg-gradient-card border-border">
         <CardHeader>
           <CardTitle className="text-lg">Resume</CardTitle>
         </CardHeader>
@@ -292,7 +292,7 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Save Button */}
       {editing && (
