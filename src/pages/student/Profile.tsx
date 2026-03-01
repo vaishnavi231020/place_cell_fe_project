@@ -107,13 +107,13 @@ const Profile: React.FC = () => {
                 <span className="px-3 py-1 rounded-full bg-info/20 text-info text-sm">
                   Year {userData?.year}
                 </span>
-                <span className={`px-3 py-1 rounded-full text-sm ${
+                {/* <span className={`px-3 py-1 rounded-full text-sm ${
                   userData?.resumeVerified 
                     ? 'bg-success/20 text-success' 
                     : 'bg-warning/20 text-warning'
                 }`}>
                   {userData?.resumeVerified ? 'Resume Verified' : 'Resume Pending'}
-                </span>
+                </span> */}
               </div>
             </div>
             <Button
