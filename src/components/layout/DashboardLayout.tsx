@@ -22,7 +22,7 @@ const routeTitles: Record<string, { title: string; subtitle?: string }> = {
   '/dashboard/applications': { title: 'My Applications', subtitle: 'Track your job applications' },
   '/dashboard/interviews': { title: 'Upcoming Interviews', subtitle: 'Scheduled interview sessions' },
   '/dashboard/notifications': { title: 'Notifications', subtitle: 'Stay updated with alerts' },
-  '/dashboard/resume': { title: 'Resume Status', subtitle: 'Track your resume verification' },
+  // '/dashboard/resume': { title: 'Resume Status', subtitle: 'Track your resume verification' },
   '/dashboard/eligibility': { title: 'Eligibility Status', subtitle: 'Check your eligibility criteria' },
   '/admin': { title: 'Admin Dashboard', subtitle: 'Placement management overview' },
   '/admin/companies': { title: 'Manage Companies', subtitle: 'Add and edit company listings' },

@@ -45,7 +45,7 @@ const studentNavItems = [
   { title: 'Interviews', path: '/dashboard/interviews', icon: Calendar },
   { title: 'AI Practice', path: '/dashboard/practice-interview', icon: GraduationCap },
   { title: 'Notifications', path: '/dashboard/notifications', icon: Bell },
-  { title: 'Resume Status', path: '/dashboard/resume', icon: FileCheck },
+  // { title: 'Resume Status', path: '/dashboard/resume', icon: FileCheck },
   { title: 'Eligibility', path: '/dashboard/eligibility', icon: CheckCircle },
 ];
 
