@@ -4,22 +4,10 @@
  * Uses REST API directly to avoid SDK compatibility issues
  */
 
-const API_KEY = 'AIzaSyAoFx4f2aYc7uxaVOdlc9QBcABn1Si7HAo';
+const API_KEY = 'AIzaSyAka1R0hl21x1vBavJ1VnCs3QYWJ070VRA';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
 
 export type InterviewRound = 'Technical' | 'HR' | 'Aptitude';
-export type InterviewType = 'Technical' | 'Behavioral' | 'System Design' | 'Mixed';
-export type ExperienceLevel = 'Fresher' | '1-3 Years' | '3+ Years';
-export type Difficulty = 'Easy' | 'Medium' | 'Hard';
-
-export interface InterviewConfig {
-  type: InterviewType;
-  role: string;
-  techStack: string[];
-  experienceLevel: ExperienceLevel;
-  difficulty: Difficulty;
-  questionCount: number;
-}
 
 export interface GeneratedQuestion {
   question: string;
@@ -27,32 +15,17 @@ export interface GeneratedQuestion {
 }
 
 export interface AnswerEvaluation {
-  score: number;
+  score: number; // 0-10
   feedback: string;
   strengths: string[];
   improvements: string[];
-  suggestedAnswer?: string;
 }
 
-export interface DetailedFeedback {
-  overallFeedback: string;
-  tips: string[];
-  communication: number;
-  technicalKnowledge: number;
-  confidence: number;
-  finalVerdict: string;
-}
-
-export interface TranscriptEvaluation {
-  score: number;
-  strengths: string[];
-  weaknesses: string[];
-  improvements: string[];
-  communication: number;
-  technicalKnowledge: number;
-  confidence: number;
-  finalVerdict: string;
-  questionBreakdown: {
+export interface InterviewFeedback {
+  overallScore: number;
+  totalQuestions: number;
+  roundType: InterviewRound;
+  questionResults: {
     question: string;
     answer: string;
     score: number;
@@ -60,14 +33,17 @@ export interface TranscriptEvaluation {
     strengths: string[];
     improvements: string[];
   }[];
+  overallFeedback: string;
+  tips: string[];
 }
 
 /**
  * Call Gemini API via REST
  */
-async function callGemini(prompt: string, maxTokens = 2048): Promise<string> {
+async function callGemini(prompt: string): Promise<string> {
+  console.log('Gemini API key present:', !!API_KEY, 'length:', API_KEY?.length || 0);
   if (!API_KEY) {
-    throw new Error('Gemini API key not configured.');
+    throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY secret.');
   }
 
   const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
@@ -77,7 +53,7 @@ async function callGemini(prompt: string, maxTokens = 2048): Promise<string> {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: maxTokens,
+        maxOutputTokens: 2048,
       }
     })
   });
@@ -112,48 +88,35 @@ function extractJSON(text: string): any {
 }
 
 /**
- * Generate interview questions based on config
+ * Generate interview questions for a specific round type
  */
 export async function generateInterviewQuestions(
-  roundOrConfig: InterviewRound | InterviewConfig,
+  round: InterviewRound,
   count: number = 5
 ): Promise<GeneratedQuestion[]> {
-  let prompt: string;
+  const prompts: Record<InterviewRound, string> = {
+    Technical: `Generate ${count} technical interview questions commonly asked in campus placements. 
+    Focus on topics like data structures, algorithms, OOP concepts, DBMS, OS, networking, and programming fundamentals.
+    Questions should be suitable for engineering students.`,
+    HR: `Generate ${count} HR interview questions commonly asked in campus placements.
+    Focus on behavioral questions, situational questions, questions about strengths/weaknesses, career goals, teamwork, and leadership.
+    Questions should be suitable for fresh graduates.`,
+    Aptitude: `Generate ${count} aptitude/logical reasoning interview questions commonly asked in campus placements.
+    Focus on problem-solving, logical reasoning, analytical thinking, and quantitative aptitude.
+    Questions should be verbal (not requiring pen-paper calculations) suitable for a voice interview.`
+  };
 
-  if (typeof roundOrConfig === 'string') {
-    // Legacy support for InterviewRound
-    const prompts: Record<InterviewRound, string> = {
-      Technical: `Generate ${count} technical interview questions for campus placements. Focus on data structures, algorithms, OOP, DBMS, OS, networking.`,
-      HR: `Generate ${count} HR interview questions for campus placements. Focus on behavioral, situational, strengths/weaknesses, career goals, teamwork.`,
-      Aptitude: `Generate ${count} aptitude/logical reasoning questions for campus placements. Focus on problem-solving, logical reasoning, analytical thinking.`
-    };
-    prompt = prompts[roundOrConfig];
-  } else {
-    // New config-based generation
-    const config = roundOrConfig;
-    prompt = `Generate ${config.questionCount} ${config.type} interview questions.
+  const prompt = `${prompts[round]}
 
-Context:
-- Role: ${config.role}
-- Tech Stack: ${config.techStack.join(', ')}
-- Experience Level: ${config.experienceLevel}
-- Difficulty: ${config.difficulty}
-
-${config.type === 'Technical' ? 'Focus on coding, system design, data structures, algorithms, and tech-specific knowledge.' : ''}
-${config.type === 'Behavioral' ? 'Focus on STAR method scenarios, leadership, teamwork, conflict resolution, and decision-making.' : ''}
-${config.type === 'System Design' ? 'Focus on architecture, scalability, database design, API design, and trade-offs.' : ''}
-${config.type === 'Mixed' ? 'Mix technical, behavioral, and situational questions. Start with technical then behavioral.' : ''}
-
-Questions should match ${config.difficulty} difficulty for ${config.experienceLevel} level.`;
-    count = config.questionCount;
-  }
-
-  prompt += `
-
-Return ONLY a valid JSON array with exactly ${count} objects:
-[{"question": "the question", "expectedKeyPoints": ["point 1", "point 2", "point 3"]}]
-
-No text before or after the JSON.`;
+  Return ONLY a valid JSON array with exactly ${count} objects in this format:
+  [
+    {
+      "question": "the interview question here",
+      "expectedKeyPoints": ["key point 1", "key point 2", "key point 3"]
+    }
+  ]
+  
+  Do not include any text before or after the JSON array. Only return the JSON.`;
 
   try {
     const text = await callGemini(prompt);
@@ -171,23 +134,22 @@ No text before or after the JSON.`;
 export async function evaluateAnswer(
   question: string,
   answer: string,
-  round: InterviewRound | InterviewType
+  round: InterviewRound
 ): Promise<AnswerEvaluation> {
-  const prompt = `You are a senior interviewer evaluating a candidate's answer in a ${round} interview.
+  const prompt = `You are an expert interviewer evaluating a candidate's answer in a ${round} interview round.
 
 Question: "${question}"
 Candidate's Answer: "${answer}"
 
-Return ONLY valid JSON (no markdown):
+Evaluate the answer and return ONLY a valid JSON object (no markdown, no extra text):
 {
-  "score": <0-10>,
-  "feedback": "<1-2 sentence feedback>",
+  "score": <number from 0 to 10>,
+  "feedback": "<brief 1-2 sentence feedback>",
   "strengths": ["<strength 1>", "<strength 2>"],
-  "improvements": ["<improvement 1>", "<improvement 2>"],
-  "suggestedAnswer": "<brief ideal answer>"
+  "improvements": ["<area to improve 1>", "<area to improve 2>"]
 }
 
-If empty/irrelevant answer, give score 0-1. Be fair but constructive.`;
+If the answer is empty, irrelevant, or just noise, give score 0-1. Be fair but constructive.`;
 
   try {
     const text = await callGemini(prompt);
@@ -198,68 +160,7 @@ If empty/irrelevant answer, give score 0-1. Be fair but constructive.`;
       score: 0,
       feedback: 'Could not evaluate the answer.',
       strengths: [],
-      improvements: ['Try to provide a clearer answer'],
-      suggestedAnswer: ''
-    };
-  }
-}
-
-/**
- * Evaluate a complete interview transcript from Vapi
- */
-export async function evaluateTranscript(
-  transcript: string,
-  interviewType: string,
-  role: string
-): Promise<TranscriptEvaluation> {
-  // Chunk long transcripts
-  const chunks = chunkText(transcript, 3000);
-  
-  const prompt = `You are a senior technical interviewer and career counselor.
-Evaluate this complete ${interviewType} interview transcript for the role of ${role}.
-
-TRANSCRIPT:
-${chunks.length > 1 ? chunks[0] + '\n...[continued]...\n' + chunks[chunks.length - 1] : transcript}
-
-Analyze the conversation and return ONLY valid JSON:
-{
-  "score": <0-100 overall score>,
-  "strengths": ["<strength>", ...],
-  "weaknesses": ["<weakness>", ...],
-  "improvements": ["<tip>", ...],
-  "communication": <0-10>,
-  "technicalKnowledge": <0-10>,
-  "confidence": <0-10>,
-  "finalVerdict": "<one sentence verdict>",
-  "questionBreakdown": [
-    {
-      "question": "<the question asked>",
-      "answer": "<candidate's answer summary>",
-      "score": <0-10>,
-      "feedback": "<brief feedback>",
-      "strengths": ["<str>"],
-      "improvements": ["<imp>"]
-    }
-  ]
-}
-
-Extract each Q&A pair from the transcript for questionBreakdown. Be thorough but fair.`;
-
-  try {
-    const text = await callGemini(prompt, 4096);
-    return extractJSON(text);
-  } catch (error) {
-    console.error('Error evaluating transcript:', error);
-    return {
-      score: 0,
-      strengths: [],
-      weaknesses: ['Could not evaluate transcript'],
-      improvements: ['Try again'],
-      communication: 5,
-      technicalKnowledge: 5,
-      confidence: 5,
-      finalVerdict: 'Evaluation failed. Please try again.',
-      questionBreakdown: []
+      improvements: ['Try to provide a clearer answer']
     };
   }
 }
@@ -268,27 +169,23 @@ Extract each Q&A pair from the transcript for questionBreakdown. Be thorough but
  * Generate overall interview feedback
  */
 export async function generateOverallFeedback(
-  round: InterviewRound | InterviewType,
+  round: InterviewRound,
   results: { question: string; answer: string; score: number }[]
-): Promise<DetailedFeedback> {
+): Promise<{ overallFeedback: string; tips: string[] }> {
   const questionsAndAnswers = results
     .map((r, i) => `Q${i + 1}: ${r.question}\nA${i + 1}: ${r.answer}\nScore: ${r.score}/10`)
     .join('\n\n');
 
-  const prompt = `You are a senior career counselor. A student completed a practice ${round} interview:
+  const prompt = `You are an expert career counselor. A student just completed a practice ${round} interview. Here are their responses:
 
 ${questionsAndAnswers}
 
 Average Score: ${(results.reduce((s, r) => s + r.score, 0) / results.length).toFixed(1)}/10
 
-Return ONLY valid JSON:
+Provide overall feedback. Return ONLY a valid JSON object:
 {
-  "overallFeedback": "<2-3 sentences>",
-  "tips": ["<tip 1>", "<tip 2>", "<tip 3>"],
-  "communication": <0-10>,
-  "technicalKnowledge": <0-10>,
-  "confidence": <0-10>,
-  "finalVerdict": "<one sentence verdict>"
+  "overallFeedback": "<2-3 sentences summarizing performance>",
+  "tips": ["<tip 1>", "<tip 2>", "<tip 3>"]
 }`;
 
   try {
@@ -298,47 +195,7 @@ Return ONLY valid JSON:
     console.error('Error generating overall feedback:', error);
     return {
       overallFeedback: 'Practice makes perfect! Keep working on your interview skills.',
-      tips: ['Practice more frequently', 'Review fundamentals', 'Stay calm and confident'],
-      communication: 5,
-      technicalKnowledge: 5,
-      confidence: 5,
-      finalVerdict: 'Keep practicing to improve your skills.'
+      tips: ['Practice more frequently', 'Review fundamentals', 'Stay calm and confident']
     };
   }
 }
-
-/**
- * Chunk text for processing large transcripts
- */
-function chunkText(text: string, maxChunkSize: number): string[] {
-  if (text.length <= maxChunkSize) return [text];
-  
-  const chunks: string[] = [];
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  let current = '';
-
-  for (const sentence of sentences) {
-    if ((current + sentence).length > maxChunkSize && current) {
-      chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current += ' ' + sentence;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
-
-// Tech stack options for interview configuration
-export const TECH_STACK_OPTIONS = [
-  'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python',
-  'Java', 'C++', 'Go', 'Rust', 'SQL', 'MongoDB',
-  'AWS', 'Docker', 'Kubernetes', 'GraphQL', 'REST APIs',
-  'Data Structures', 'Algorithms', 'System Design', 'Machine Learning'
-] as const;
-
-export const ROLE_OPTIONS = [
-  'Software Engineer', 'Frontend Developer', 'Backend Developer',
-  'Full Stack Developer', 'Data Scientist', 'DevOps Engineer',
-  'Mobile Developer', 'QA Engineer', 'Product Manager'
-] as const;
