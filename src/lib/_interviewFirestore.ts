@@ -15,7 +15,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { InterviewRound } from './geminiService';
+import type { InterviewRound, InterviewFeedback } from './geminiService';
 
 export interface PracticeInterviewRecord {
   id?: string;
